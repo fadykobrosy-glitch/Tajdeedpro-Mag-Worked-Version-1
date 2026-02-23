@@ -214,7 +214,6 @@ class _WebViewScreenState extends State<WebViewScreen> with SingleTickerProvider
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF2c2c2c))
-      ..setDomStorageEnabled(true)
       ..addJavaScriptChannel(
         'NativeShareChannel',
         onMessageReceived: (JavaScriptMessage message) {
