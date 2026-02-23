@@ -33,6 +33,17 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  // متغيرات مشتركة لتقليل التكرار
+  static const _logoShape = ContinuousRectangleBorder(
+    side: BorderSide(color: Colors.orange, width: 2.0),
+    borderRadius: BorderRadius.circular(50),
+  );
+  
+  static const _logoDecoration = ShapeDecoration(
+    color: Color(0xFFfb6d0e),
+    shape: _logoShape,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -64,20 +75,11 @@ class _SplashScreenState extends State<SplashScreen> {
                     Container(
                       width: 120,
                       height: 120,
-                      decoration: ShapeDecoration(
-                        color: const Color(0xFFfb6d0e),
-                        shape: ContinuousRectangleBorder(
-                          side: const BorderSide(color: Colors.orange, width: 2.0),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                      ),
+                      decoration: _logoDecoration,
                       child: Center(
                         child: ClipPath(
                           clipper: ShapeBorderClipper(
-                            shape: ContinuousRectangleBorder(
-                              side: const BorderSide(color: Colors.orange, width: 2.0),
-                              borderRadius: BorderRadius.circular(50),
-                            ),
+                            shape: _logoShape,
                           ),
                           child: Image.asset(
                             'assets/icon/icon.png',
@@ -87,13 +89,7 @@ class _SplashScreenState extends State<SplashScreen> {
                               return Container(
                                 width: 120,
                                 height: 120,
-                                decoration: ShapeDecoration(
-                                  color: const Color(0xFFfb6d0e),
-                                  shape: ContinuousRectangleBorder(
-                                    side: const BorderSide(color: Colors.orange, width: 2.0),
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                ),
+                                decoration: _logoDecoration,
                                 child: const Icon(
                                   Icons.article,
                                   size: 60,
