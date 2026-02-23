@@ -180,7 +180,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF2c2c2c))
+      ..setBackgroundColor(Colors.transparent)
       ..addJavaScriptChannel(
         'NativeShareChannel',
         onMessageReceived: (JavaScriptMessage message) {
@@ -199,13 +199,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
             final url = request.url;
 
             // إصلاح الواتساب والروابط الخارجية - الفتح الخارجي فوراً
-            if (url.contains("whatsapp.com") || url.startsWith("whatsapp:") || 
-                url.startsWith("intent://") || (!url.startsWith('http') && !url.startsWith('https'))) {
+            if (url.startsWith('whatsapp:') || url.startsWith('intent://')) {
               try {
-                String finalUrl = url;
-                if (url.startsWith('intent://')) {
-                  finalUrl = url.replaceFirst('intent://', 'https://').split('#Intent')[0];
-                }
+                String finalUrl = url.startsWith('intent://') 
+                    ? url.replaceFirst('intent://', 'https://').split('#Intent')[0]
+                    : url;
                 await launchUrl(Uri.parse(finalUrl), mode: LaunchMode.externalApplication);
                 return NavigationDecision.prevent;
               } catch (e) {
@@ -219,10 +217,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
               // 1. تنظيف الواجهة (بضل متل ما هو)
               var style = document.createElement('style');
               style.innerHTML = `
-                ::-webkit-scrollbar { opacity: 0 !important; width: 0px !important; background: transparent !important; }
-                ::-webkit-scrollbar-track { background: transparent !important; }
-                ::-webkit-scrollbar-thumb { background: transparent !important; }
-                html, body { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+                ::-webkit-scrollbar { opacity: 0 !important; }
                 .header-widget, .footer-widget { display: none !important; }
               `;
               document.head.appendChild(style);
