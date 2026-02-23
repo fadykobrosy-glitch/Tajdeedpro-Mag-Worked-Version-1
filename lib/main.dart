@@ -26,7 +26,9 @@ class TajdeedProMagApp extends StatelessWidget {
 }
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final VoidCallback? onNavigateComplete;
+  
+  const SplashScreen({super.key, this.onNavigateComplete});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -61,49 +63,65 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: ShapeDecoration(
-                        color: const Color(0xFFfb6d0e),
-                        shape: ContinuousRectangleBorder(
-                          side: const BorderSide(color: Colors.orange, width: 2.0),
-                          borderRadius: BorderRadius.circular(50),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Circular Progress Indicator
+                        SizedBox(
+                          width: 140,
+                          height: 140,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFfb6d0e)),
+                            backgroundColor: Colors.transparent,
+                          ),
                         ),
-                      ),
-                      child: Center(
-                        child: ClipPath(
-                          clipper: ShapeBorderClipper(
+                        // Logo Container
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: ShapeDecoration(
+                            color: const Color(0xFFfb6d0e),
                             shape: ContinuousRectangleBorder(
                               side: const BorderSide(color: Colors.orange, width: 2.0),
-                              borderRadius: BorderRadius.circular(50),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: Image.asset(
-                            'assets/icon/icon.png',
-                            width: 120,
-                            height: 120,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
+                          child: Center(
+                            child: ClipPath(
+                              clipper: ShapeBorderClipper(
+                                shape: ContinuousRectangleBorder(
+                                  side: const BorderSide(color: Colors.orange, width: 2.0),
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                              child: Image.asset(
+                                'assets/icon/icon.png',
                                 width: 120,
                                 height: 120,
-                                decoration: ShapeDecoration(
-                                  color: const Color(0xFFfb6d0e),
-                                  shape: ContinuousRectangleBorder(
-                                    side: const BorderSide(color: Colors.orange, width: 2.0),
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.article,
-                                  size: 60,
-                                  color: Colors.white,
-                                ),
-                              );
-                            },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: ShapeDecoration(
+                                      color: const Color(0xFFfb6d0e),
+                                      shape: ContinuousRectangleBorder(
+                                        side: const BorderSide(color: Colors.orange, width: 2.0),
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.article,
+                                      size: 60,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 30),
                     Text(
@@ -172,19 +190,31 @@ class WebViewScreen extends StatefulWidget {
   State<WebViewScreen> createState() => _WebViewScreenState();
 }
 
-class _WebViewScreenState extends State<WebViewScreen> {
+class _WebViewScreenState extends State<WebViewScreen> with SingleTickerProviderStateMixin {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _isPageLoaded = false;
   double _loadingProgress = 0.0;
+  late final AnimationController _fadeController;
+  late final Animation<double> _fadeAnimation;
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
     super.initState();
     
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF2c2c2c))
+      ..setDomStorageEnabled(true)
       ..addJavaScriptChannel(
         'NativeShareChannel',
         onMessageReceived: (JavaScriptMessage message) {
@@ -219,6 +249,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
             return NavigationDecision.navigate;
           },
           onPageFinished: (String url) {
+            setState(() {
+              _isPageLoaded = true;
+            });
+            _fadeController.forward();
             _controller.runJavaScript('''
               // 1. تنظيف الواجهة (بضل متل ما هو)
               var style = document.createElement('style');
@@ -286,6 +320,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
   }
 
   @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: _onWillPop,
@@ -307,18 +347,18 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 ),
               ),
             ),
-            // Loading indicator overlay
-            if (_isLoading)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: LinearProgressIndicator(
-                  value: _loadingProgress,
-                  backgroundColor: Colors.transparent,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFfb6d0e)),
-                  minHeight: 3,
-                ),
+            // Animated Splash screen overlay - fades out when page is loaded
+            if (!_isPageLoaded)
+              AnimatedBuilder(
+                animation: _fadeAnimation,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: SplashScreen(
+                      onNavigateComplete: () {},
+                    ),
+                  );
+                },
               ),
           ],
         ),
