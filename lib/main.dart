@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> {
   // متغيرات مشتركة لتقليل التكرار
   static const _logoShape = ContinuousRectangleBorder(
     side: BorderSide(color: Colors.orange, width: 2.0),
-    borderRadius: BorderRadius.circular(50),
+    borderRadius: BorderRadius.circular(60),
   );
   
   static const _logoDecoration = ShapeDecoration(
