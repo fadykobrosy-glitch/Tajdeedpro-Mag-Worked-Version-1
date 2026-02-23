@@ -223,7 +223,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
               // 1. تنظيف الواجهة (بضل متل ما هو)
               var style = document.createElement('style');
               style.innerHTML = `
-                ::-webkit-scrollbar { display: none !important; }
+                ::-webkit-scrollbar { opacity: 0 !important; width: 0px !important; background: transparent !important; }
+                ::-webkit-scrollbar-track { background: transparent !important; }
+                ::-webkit-scrollbar-thumb { background: transparent !important; }
                 html, body { -ms-overflow-style: none !important; scrollbar-width: none !important; }
                 .header-widget, .footer-widget { display: none !important; }
               `;
