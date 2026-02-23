@@ -297,6 +297,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 strokeWidth: 3,
                 child: WebViewWidget(
                   controller: _controller,
+                  physics: const AlwaysScrollableScrollPhysics(),
                 ),
               ),
             ),
