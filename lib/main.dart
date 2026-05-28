@@ -13,7 +13,7 @@ class OtimeSyriaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tajdeed Pro Mag',
+      title: 'OTime Syria',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: false,
