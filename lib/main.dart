@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -20,143 +18,7 @@ class OtimeSyriaApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: false,
       ),
-      home: const SplashScreen(),
-    );
-  }
-}
-
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  // متغيرات مشتركة لتقليل التكرار
-  static const _logoShape = ContinuousRectangleBorder(
-    side: BorderSide(color: Colors.orange, width: 2.0),
-    borderRadius: BorderRadius.all(Radius.circular(60)),
-  );
-  
-  static const _logoDecoration = ShapeDecoration(
-    color: Color(0xFFfb6d0e),
-    shape: _logoShape,
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    _navigateToHome();
-  }
-
-  _navigateToHome() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const WebViewScreen()),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF2c2c2c),
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: _logoDecoration,
-                      child: Center(
-                        child: ClipPath(
-                          clipper: ShapeBorderClipper(
-                            shape: _logoShape,
-                          ),
-                          child: Image.asset(
-                            'assets/icon/icon.png',
-                            width: 120,
-                            height: 120,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 120,
-                                height: 120,
-                                decoration: _logoDecoration,
-                                child: const Icon(
-                                  Icons.article,
-                                  size: 60,
-                                  color: Colors.white,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    Text(
-                      'تجديد',
-                      style: GoogleFonts.tajawal(
-                        color: const Color(0xFFefefef),
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 15),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                      child: Text(
-                        'أول مجلة إلكترونية تقدم الابتكار والتطوير في عالم التصميم الواسع والإعلان',
-                        style: GoogleFonts.tajawal(
-                          color: const Color(0xFFefefef),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 50.0),
-              child: Column(
-                children: [
-                  Text(
-                    'Version 1.0.0',
-                    style: GoogleFonts.tajawal(
-                      color: const Color(0xFFfb6d0e),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'All Rights Reserved - Tajdeedpro Mag - 2026',
-                    style: GoogleFonts.tajawal(
-                      color: const Color(0xFFefefef),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      home: const WebViewScreen(),
     );
   }
 }
@@ -172,7 +34,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
   double _loadingProgress = 0.0;
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
@@ -180,7 +41,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
     
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.transparent)
+      // تم إلغاء اللون الشفاف ووضع لون معتم لمنع نترات الـ CPU وتفعيل الـ GPU بالكامل
+      ..setBackgroundColor(const Color(0xFF2c2c2c))
       ..addJavaScriptChannel(
         'NativeShareChannel',
         onMessageReceived: (JavaScriptMessage message) {
@@ -198,7 +60,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
           onNavigationRequest: (NavigationRequest request) async {
             final url = request.url;
 
-            // إصلاح الواتساب والروابط الخارجية - الفتح الخارجي فوراً
             if (url.startsWith('whatsapp:') || url.startsWith('intent://')) {
               try {
                 String finalUrl = url.startsWith('intent://') 
@@ -213,42 +74,35 @@ class _WebViewScreenState extends State<WebViewScreen> {
             return NavigationDecision.navigate;
           },
           onPageFinished: (String url) {
+            // تحسين السكرول بار من خلال display: none الخفيفة على معالج الرسوميات
             _controller.runJavaScript('''
-              // 1. تنظيف الواجهة (بضل متل ما هو)
               var style = document.createElement('style');
               style.innerHTML = `
-                ::-webkit-scrollbar { opacity: 0 !important; }
+                ::-webkit-scrollbar { display: none !important; }
                 .header-widget, .footer-widget { display: none !important; }
+                body, html { background-color: #2c2c2c !important; }
               `;
               document.head.appendChild(style);
 
-              // 2. وظيفة استخراج الرابط "الجراحية" (للمقالات النصية والمودال حصراً)
               function getLink(element) {
-                // أ- محاولة جلب الرابط الأساسي (للمقالات العادية الشغالة)
                 var parentCard = element.closest('.article-card');
                 var dataUrl = parentCard ? parentCard.getAttribute('data-post-url') : null;
                 if (dataUrl) return dataUrl;
 
-                // ب- إذا فشل وكان المقال نصي (.no-image)
                 if (parentCard && parentCard.classList.contains('no-image')) {
                   var textLink = parentCard.querySelector('h2 a, h3 a, a[href*=".html"]');
                   if (textLink) return textLink.href;
                 }
 
-                // ج- إذا كنا جوا مودال (نصي أو عادي)
                 var modal = document.getElementById('articleModal');
                 if (modal && modal.style.display !== 'none') {
-                  // البحث عن رابط المقال الكامل داخل المودال
                   var modalLink = modal.getAttribute('data-current-url') || 
                                   modal.querySelector('a[href*=".html"], a.read-more')?.href;
                   if (modalLink) return modalLink;
                 }
-
-                // د- الملاذ الأخير
                 return window.location.href;
               }
 
-              // 3. التنصت على أي نقرة مشاركة
               document.addEventListener('click', function(e) {
                 var btn = e.target.closest('.footer-btn.share-btn');
                 if (btn) {
@@ -263,10 +117,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
         ),
       )
       ..loadRequest(Uri.parse('https://tpm-offers.blogspot.com/'));
-  }
-
-  Future<void> _refreshWebView() async {
-    await _controller.reload();
   }
 
   Future<bool> _onWillPop() async {
@@ -286,21 +136,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
         backgroundColor: const Color(0xFF2c2c2c),
         body: Stack(
           children: [
-            // Full-screen WebView with RefreshIndicator
             SafeArea(
-              child: RefreshIndicator(
-                key: _refreshIndicatorKey,
-                onRefresh: _refreshWebView,
-                color: const Color(0xFFfb6d0e),
-                backgroundColor: const Color(0xFF2c2c2c),
-                displacement: 80,
-                strokeWidth: 3,
-                child: WebViewWidget(
-                  controller: _controller,
-                ),
+              child: WebViewWidget(
+                controller: _controller,
               ),
             ),
-            // Loading indicator overlay
             if (_isLoading)
               Positioned(
                 top: 0,
