@@ -172,7 +172,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
   double _loadingProgress = 0.0;
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
@@ -265,10 +264,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..loadRequest(Uri.parse('https://tpm-offers.blogspot.com/'));
   }
 
-  Future<void> _refreshWebView() async {
-    await _controller.reload();
-  }
-
   Future<bool> _onWillPop() async {
     if (await _controller.canGoBack()) {
       await _controller.goBack();
@@ -286,20 +281,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
         backgroundColor: const Color(0xFF2c2c2c),
         body: Stack(
           children: [
-            // Full-screen WebView with RefreshIndicator
-            SafeArea(
-              child: RefreshIndicator(
-                key: _refreshIndicatorKey,
-                onRefresh: _refreshWebView,
-                color: const Color(0xFFfb6d0e),
-                backgroundColor: const Color(0xFF2c2c2c),
-                displacement: 80,
-                strokeWidth: 3,
+            // Full-screen WebView without RefreshIndicator
+              SafeArea(
                 child: WebViewWidget(
                   controller: _controller,
                 ),
               ),
-            ),
             // Loading indicator overlay
             if (_isLoading)
               Positioned(
