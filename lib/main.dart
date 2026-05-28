@@ -18,7 +18,6 @@ class OtimeSyriaApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: false,
       ),
-      // تم تغيير الـ home ليبدأ التطبيق مباشرة بصفحة الويب
       home: const WebViewScreen(),
     );
   }
@@ -42,7 +41,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
     
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.transparent)
+      // تم إلغاء اللون الشفاف ووضع لون معتم لمنع نترات الـ CPU وتفعيل الـ GPU بالكامل
+      ..setBackgroundColor(const Color(0xFF2c2c2c))
       ..addJavaScriptChannel(
         'NativeShareChannel',
         onMessageReceived: (JavaScriptMessage message) {
@@ -74,11 +74,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
             return NavigationDecision.navigate;
           },
           onPageFinished: (String url) {
+            // تحسين السكرول بار من خلال display: none الخفيفة على معالج الرسوميات
             _controller.runJavaScript('''
               var style = document.createElement('style');
               style.innerHTML = `
-                ::-webkit-scrollbar { opacity: 0 !important; }
+                ::-webkit-scrollbar { display: none !important; }
                 .header-widget, .footer-widget { display: none !important; }
+                body, html { background-color: #2c2c2c !important; }
               `;
               document.head.appendChild(style);
 
