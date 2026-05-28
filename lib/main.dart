@@ -47,7 +47,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     overScrollMode: OverScrollMode.NEVER,
     verticalScrollbarThumbColor: const Color(0x00000000), // إخفاء السكرول بار برمجياً
     
-    // الأسطر الثلاثة القادمة هي الحل لمنع ضياع الـ LocalStorage والفايربيس
+    // الحل المعتمد لمنع ضياع الـ LocalStorage والفايربيس
     domStorageEnabled: true, // تفعيل التخزين المحلي لضمان ثبات اللوكال ستوريج
     databaseEnabled: true,   // تفعيل قواعد بيانات المتصفح لعمل الفايربيس بسلاسة
     cacheEnabled: true,      // تفعيل الكاش لحفظ الجلسات عند تصغير التطبيق
@@ -78,12 +78,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 onWebViewCreated: (controller) {
                   _webViewController = controller;
                   
-                  // كود دمج ميزة المشاركة الأصلية (Share) مع جافاسكربت
-                  _webViewController!.addJavaScriptChannel(
-                    'NativeShareChannel',
-                    onMessageReceived: (message) {
-                      if (message.message.isNotEmpty) {
-                        Share.share(message.message);
+                  // تم استعادة كودك الأصلي الصحيح للمشاركة هنا
+                  _webViewController!.addJavaScriptHandler(
+                    handlerName: 'NativeShareChannel',
+                    callback: (args) {
+                      if (args.isNotEmpty && args[0] != null) {
+                        Share.share(args[0].toString());
                       }
                     },
                   );
@@ -143,13 +143,14 @@ class _WebViewScreenState extends State<WebViewScreen> {
                       return window.location.href;
                     }
 
+                    // تم استعادة كود نداء المشاركة الأصلي الصحيح هنا أيضاً
                     document.addEventListener('click', function(e) {
                       var btn = e.target.closest('.footer-btn.share-btn');
                       if (btn) {
                         e.preventDefault();
                         e.stopPropagation();
                         var link = getLink(btn);
-                        window.NativeShareChannel.postMessage(link);
+                        window.flutter_inappwebview.callHandler('NativeShareChannel', link);
                       }
                     }, true);
                   ''');
