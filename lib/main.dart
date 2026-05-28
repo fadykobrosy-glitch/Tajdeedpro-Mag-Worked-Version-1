@@ -36,18 +36,21 @@ class _WebViewScreenState extends State<WebViewScreen> {
   bool _isLoading = true;
   double _loadingProgress = 0.0;
 
-  // إعدادات خارقة لتسريع المتصفح والـ GPU لأقصى درجة
+  // إعدادات خارقة لتسريع المتصفح والـ GPU وأرشفة الذاكرة المحلية
   final InAppWebViewSettings _settings = InAppWebViewSettings(
     javaScriptEnabled: true,
     transparentBackground: false,
     preferredContentMode: UserPreferredContentMode.MOBILE,
-    // تفعيل التسريع العتادي وتخفيف معالجة الطبقات
-    hardwareAcceleration: true,
-    // تحسين أداء الرندرة والتمرير
-    disableVerticalScroll: false,
+    hardwareAcceleration: true, // تفعيل التسريع العتادي وتخفيف معالجة الطبقات
+    disableVerticalScroll: false, // تحسين أداء الرندرة والتمرير
     disableHorizontalScroll: false,
     overScrollMode: OverScrollMode.NEVER,
     verticalScrollbarThumbColor: const Color(0x00000000), // إخفاء السكرول بار برمجياً
+    
+    // الأسطر الثلاثة القادمة هي الحل لمنع ضياع الـ LocalStorage والفايربيس
+    domStorageEnabled: true, // تفعيل التخزين المحلي لضمان ثبات اللوكال ستوريج
+    databaseEnabled: true,   // تفعيل قواعد بيانات المتصفح لعمل الفايربيس بسلاسة
+    cacheEnabled: true,      // تفعيل الكاش لحفظ الجلسات عند تصغير التطبيق
   );
 
   @override
@@ -76,11 +79,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   _webViewController = controller;
                   
                   // كود دمج ميزة المشاركة الأصلية (Share) مع جافاسكربت
-                  _webViewController!.addJavaScriptHandler(
-                    handlerName: 'NativeShareChannel',
-                    callback: (args) {
-                      if (args.isNotEmpty && args[0] != null) {
-                        Share.share(args[0].toString());
+                  _webViewController!.addJavaScriptChannel(
+                    'NativeShareChannel',
+                    onMessageReceived: (message) {
+                      if (message.message.isNotEmpty) {
+                        Share.share(message.message);
                       }
                     },
                   );
@@ -96,6 +99,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
                   if (url.startsWith('whatsapp:') || url.startsWith('tel:') || url.startsWith('intent://')) {
                     try {
+                      // فرملة أمان: نمنح المتصفح 300 مللي ثانية ليكمل حفظ الطابور في الـ LocalStorage قبل فتح التطبيق الخارجي
+                      await Future.delayed(const Duration(milliseconds: 300));
+
                       String finalUrl = url.startsWith('intent://') 
                           ? url.replaceFirst('intent://', 'https://').split('#Intent')[0]
                           : url;
@@ -143,7 +149,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                         e.preventDefault();
                         e.stopPropagation();
                         var link = getLink(btn);
-                        window.flutter_inappwebview.callHandler('NativeShareChannel', link);
+                        window.NativeShareChannel.postMessage(link);
                       }
                     }, true);
                   ''');
