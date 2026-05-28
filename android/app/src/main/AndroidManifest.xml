@@ -27,13 +27,17 @@
         <package android:name="com.twitter.android" />
     </queries>
     
-    <!-- تم إضافة التسريع العتادي هنا للتطبيق كاملاً -->
     <application
         android:label="OTime Syria"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:hardwareAccelerated="true">
         
+        <!-- هذا هو السطر السحري الذي سيحل مشكلة النتر ويعيد النعومة للتطبيق -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -52,6 +56,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
