@@ -1,10 +1,9 @@
-# Tajdeed Pro Mag
-
-A clean, minimalist Flutter WebView app for Android that displays the Tajdeed Pro Magazine website.
+# OTime Syria
+A clean, minimalist Flutter WebView app for Android that displays the OTime Syria website.
 
 ## Features
 
-- **WebView**: Loads https://tajdeedpro.blogspot.com/
+- **WebView**: Loads https://https://tpm-offers.blogspot.com//
 - **Android Back Navigation**: Full support for physical back button navigation through web history
 - **Progress Bar**: Thin progress bar at the top (#fb6d0e)
 - **Splash Screen**: Displays app logo and version number
