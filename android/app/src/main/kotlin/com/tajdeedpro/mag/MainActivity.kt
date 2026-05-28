@@ -1,4 +1,4 @@
-package com.tajdeedpro.mag
+package com.OtimeSyria.offers
 
 import io.flutter.embedding.android.FlutterActivity
 
