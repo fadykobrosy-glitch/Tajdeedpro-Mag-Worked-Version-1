@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // مكتبة التحكم بأشرطة النظام وملء الشاشة
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -31,7 +32,6 @@ class WebViewScreen extends StatefulWidget {
   State<WebViewScreen> createState() => _WebViewScreenState();
 }
 
-// أضفنا هنا WidgetsBindingObserver لمراقبة حركة واستيقاظ الموبايل
 class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserver {
   InAppWebViewController? _webViewController;
   bool _isLoading = true;
@@ -57,13 +57,14 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
   @override
   void initState() {
     super.initState();
-    // تفعيل وتثبيت مستشعر حركة التطبيق عند بدء التشغيل
     WidgetsBinding.instance.addObserver(this);
+    
+    // تفعيل الوضع الغامر بالكامل (ملء الشاشة 100% وإخفاء أشرطة الإشعارات والتحكم)
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override
   void dispose() {
-    // إغلاق المستشعر عند تدمير التطبيق لمنع استهلاك الذاكرة
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -74,10 +75,12 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
     
     // إذا استيقظ التطبيق وعاد للواجهة (من المينيمايز أو القفل)
     if (state == AppLifecycleState.resumed) {
+      // إعادة تثبيت ملء الشاشة فوراً عند العودة للتطبيق للتأكد من عدم ظهور الأشرطة مجدداً
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
       if (_webViewController != null) {
         debugPrint('📱 [Otime Wakeup] تم رصد عودة التطبيق للواجهة، يتم نغز المزامنة فوراً...');
         
-        // نغز كود الجافاسكربت الخاص بموقعك بشكل صامت وفوري دون انتظار الـ 3 دقائق
         _webViewController!.evaluateJavascript(source: '''
           console.log('🔄 [Native Bridge] نغزة ذكية من فلاتر لإفراغ طابور العمليات فوراً');
           if (typeof syncGuestInteractionsWithFirebase === 'function') {
@@ -109,60 +112,64 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
         backgroundColor: const Color(0xFF2c2c2c),
         body: Stack(
           children: [
-            SafeArea(
-              child: InAppWebView(
-                initialUrlRequest: URLRequest(url: WebUri('https://tpm-offers.blogspot.com/')),
-                initialSettings: _settings,
-                onWebViewCreated: (controller) {
-                  _webViewController = controller;
-                  
-                  // تم استعادة كودك الأصلي الصحيح للمشاركة هنا
-                  _webViewController!.addJavaScriptHandler(
-                    handlerName: 'NativeShareChannel',
-                    callback: (args) {
-                      if (args.isNotEmpty && args[0] != null) {
-                        Share.share(args[0].toString());
-                      }
-                    },
-                  );
-                },
-                onProgressChanged: (controller, progress) {
-                  setState(() {
-                    _loadingProgress = progress / 100;
-                    _isLoading = progress < 100;
-                  });
-                },
-                shouldOverrideUrlLoading: (controller, navigationAction) async {
-                  final url = navigationAction.request.url?.toString() ?? '';
-
-                  if (url.startsWith('whatsapp:') || url.startsWith('tel:') || url.startsWith('intent://')) {
-                    try {
-                      // فرملة أمان: نمنح المتصفح 300 مللي ثانية ليكمل حفظ الطابور في الـ LocalStorage قبل فتح التطبيق الخارجي
-                      await Future.delayed(const Duration(milliseconds: 300));
-
-                      String finalUrl = url.startsWith('intent://') 
-                          ? url.replaceFirst('intent://', 'https://').split('#Intent')[0]
-                          : url;
-                      await launchUrl(Uri.parse(finalUrl), mode: LaunchMode.externalApplication);
-                      return NavigationActionPolicy.CANCEL;
-                    } catch (e) {
-                      debugPrint('External launch error: $e');
+            // تم إزالة الـ SafeArea هنا ليتمدد المتصفح بنسبة 100% على كامل أبعاد الشاشة الحقيقية
+            InAppWebView(
+              initialUrlRequest: URLRequest(url: WebUri('https://tpm-offers.blogspot.com/')),
+              initialSettings: _settings,
+              onWebViewCreated: (controller) {
+                _webViewController = controller;
+                
+                _webViewController!.addJavaScriptHandler(
+                  handlerName: 'NativeShareChannel',
+                  callback: (args) {
+                    if (args.isNotEmpty && args[0] != null) {
+                      Share.share(args[0].toString());
                     }
+                  },
+                );
+              },
+              onProgressChanged: (controller, progress) {
+                setState(() {
+                  _loadingProgress = progress / 100;
+                  _isLoading = progress < 100;
+                });
+              },
+              shouldOverrideUrlLoading: (controller, navigationAction) async {
+                final url = navigationAction.request.url?.toString() ?? '';
+
+                if (url.startsWith('whatsapp:') || url.startsWith('tel:') || url.startsWith('intent://')) {
+                  try {
+                    await Future.delayed(const Duration(milliseconds: 300));
+
+                    String finalUrl = url.startsWith('intent://') 
+                        ? url.replaceFirst('intent://', 'https://').split('#Intent')[0]
+                        : url;
+                    await launchUrl(Uri.parse(finalUrl), mode: LaunchMode.externalApplication);
+                    return NavigationActionPolicy.CANCEL;
+                  } catch (e) {
+                    debugPrint('External launch error: $e');
                   }
-                  return NavigationActionPolicy.ALLOW;
-                },
-                onLoadStop: (controller, url) async {
-                  // حقن كود الـ CSS والـ JS الذكي الخاص بموقعك لإخفاء الهيدر والفوتر وتفعيل المشاركة
-                  await controller.evaluateJavascript(source: '''
+                }
+                return NavigationActionPolicy.ALLOW;
+              },
+              onLoadStop: (controller, url) async {
+                // حقن كود الـ CSS والـ JS المحمّي ضد التكرار لمنع الـ Flicker والبطء
+                await controller.evaluateJavascript(source: '''
+                  // 1. منع تكرار حقن الـ CSS (حقن لمرة واحدة بالـ ID)
+                  if (!document.getElementById('otime-custom-styles')) {
                     var style = document.createElement('style');
+                    style.id = 'otime-custom-styles';
                     style.innerHTML = `
                       ::-webkit-scrollbar { display: none !important; }
                       .header-widget, .footer-widget { display: none !important; }
                       body, html { background-color: #2c2c2c !important; }
                     `;
                     document.head.appendChild(style);
+                  }
 
-                    function getLink(element) {
+                  // حماية الدالة المساعدة من التكرار
+                  if (typeof window.getLink !== 'function') {
+                    window.getLink = function(element) {
                       var parentCard = element.closest('.article-card');
                       var dataUrl = parentCard ? parentCard.getAttribute('data-post-url') : null;
                       if (dataUrl) return dataUrl;
@@ -179,21 +186,24 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                         if (modalLink) return modalLink;
                       }
                       return window.location.href;
-                    }
+                    };
+                  }
 
-                    // تم استعادة كود نداء المشاركة الأصلي الصحيح هنا أيضاً
+                  // 2. منع تكرار مستمعي النقرات (استخدام الـ window flag كـ قفل أمان)
+                  if (!window.otimeShareListenerAdded) {
+                    window.otimeShareListenerAdded = true;
                     document.addEventListener('click', function(e) {
                       var btn = e.target.closest('.footer-btn.share-btn');
                       if (btn) {
                         e.preventDefault();
                         e.stopPropagation();
-                        var link = getLink(btn);
+                        var link = window.getLink(btn);
                         window.flutter_inappwebview.callHandler('NativeShareChannel', link);
                       }
                     }, true);
-                  ''');
-                },
-              ),
+                  }
+                ''');
+              },
             ),
             if (_isLoading)
               Positioned(
