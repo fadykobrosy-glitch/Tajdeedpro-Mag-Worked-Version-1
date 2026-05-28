@@ -31,7 +31,8 @@ class WebViewScreen extends StatefulWidget {
   State<WebViewScreen> createState() => _WebViewScreenState();
 }
 
-class _WebViewScreenState extends State<WebViewScreen> {
+// أضفنا هنا WidgetsBindingObserver لمراقبة حركة واستيقاظ الموبايل
+class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserver {
   InAppWebViewController? _webViewController;
   bool _isLoading = true;
   double _loadingProgress = 0.0;
@@ -52,6 +53,43 @@ class _WebViewScreenState extends State<WebViewScreen> {
     databaseEnabled: true,   // تفعيل قواعد بيانات المتصفح لعمل الفايربيس بسلاسة
     cacheEnabled: true,      // تفعيل الكاش لحفظ الجلسات عند تصغير التطبيق
   );
+
+  @override
+  void initState() {
+    super.initState();
+    // تفعيل وتثبيت مستشعر حركة التطبيق عند بدء التشغيل
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    // إغلاق المستشعر عند تدمير التطبيق لمنع استهلاك الذاكرة
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // إذا استيقظ التطبيق وعاد للواجهة (من المينيمايز أو القفل)
+    if (state == AppLifecycleState.resumed) {
+      if (_webViewController != null) {
+        debugPrint('📱 [Otime Wakeup] تم رصد عودة التطبيق للواجهة، يتم نغز المزامنة فوراً...');
+        
+        // نغز كود الجافاسكربت الخاص بموقعك بشكل صامت وفوري دون انتظار الـ 3 دقائق
+        _webViewController!.evaluateJavascript(source: '''
+          console.log('🔄 [Native Bridge] نغزة ذكية من فلاتر لإفراغ طابور العمليات فوراً');
+          if (typeof syncGuestInteractionsWithFirebase === 'function') {
+            syncGuestInteractionsWithFirebase();
+          }
+          if (typeof syncInteractionsWithFirebase === 'function') {
+            syncInteractionsWithFirebase();
+          }
+        ''');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
