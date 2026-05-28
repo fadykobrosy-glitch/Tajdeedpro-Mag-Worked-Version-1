@@ -11,13 +11,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter: ^4.8.0
+  flutter_inappwebview: ^6.1.5  # استبدل حزمة جوجل القديمة بهذا السطر
   google_fonts: ^6.2.1
   flutter_launcher_icons: ^0.13.1
   url_launcher: ^6.3.1
   cached_network_image: ^3.3.1
   share_plus: ^7.2.2
-
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
