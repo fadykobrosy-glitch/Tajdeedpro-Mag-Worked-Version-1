@@ -43,7 +43,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
     preferredContentMode: UserPreferredContentMode.MOBILE,
     // تفعيل التسريع العتادي وتخفيف معالجة الطبقات
     hardwareAcceleration: true,
-    allowBackgroundHtmlParser: true,
     useExperimentalWebViewOptions: true,
     // تحسين أداء الرندرة والتمرير
     disableVerticalScroll: false,
