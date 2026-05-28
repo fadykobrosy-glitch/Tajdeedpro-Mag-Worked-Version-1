@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // مكتبة التحكم المستقر بألوان أشرطة النظام
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -37,38 +37,40 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
   bool _isLoading = true;
   double _loadingProgress = 0.0;
 
-  // إعدادات خارقة لتسريع المتصفح والـ GPU وأرشفة الذاكرة المحلية
+  // إعدادات محدثة لحل مشاكل الفيديو والتدقير
   final InAppWebViewSettings _settings = InAppWebViewSettings(
     javaScriptEnabled: true,
     transparentBackground: false,
     preferredContentMode: UserPreferredContentMode.MOBILE,
-    hardwareAcceleration: true, // تفعيل التسريع العتادي وتخفيف معالجة الطبقات
-    disableVerticalScroll: false, // تحسين أداء الرندرة والتمرير
+    hardwareAcceleration: true,
+    // إعدادات الفيديو والأوتوبلاي
+    allowsInlineMediaPlayback: true,
+    mediaPlaybackRequiresUserGesture: false,
+    javaScriptCanOpenWindowsAutomatically: true,
+    // إعدادات الأداء ومنع التدقير
+    useShouldOverrideUrlLoading: true, 
+    disableVerticalScroll: false,
     disableHorizontalScroll: false,
     overScrollMode: OverScrollMode.NEVER,
-    verticalScrollbarThumbColor: const Color(0x00000000), // إخفاء السكرول بار برمجياً
-    
-    // الحل المعتمد لمنع ضياع الـ LocalStorage والفايربيس
-    domStorageEnabled: true, // تفعيل التخزين المحلي لضمان ثبات اللوكال ستوريج
-    databaseEnabled: true,   // تفعيل قواعد بيانات المتصفح لعمل الفايربيس بسلاسة
-    cacheEnabled: true,      // تفعيل الكاش لحفظ الجلسات عند تصغير التطبيق
+    verticalScrollbarThumbColor: const Color(0x00000000),
+    domStorageEnabled: true,
+    databaseEnabled: true,
+    cacheEnabled: true,
   );
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
-    // تثبيت أشرطة الهاتف باللون الأسود المستقر والكلاسيكي
     _applyStableSystemUI();
   }
 
   void _applyStableSystemUI() {
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.black, // شريط الساعة العلوي أسود
-      statusBarIconBrightness: Brightness.light, // أيقونات الساعة بيضاء
-      systemNavigationBarColor: Colors.black, // شريط الأدوات السفلي أسود
-      systemNavigationBarIconBrightness: Brightness.light, // أزرار التحكم السفلية بيضاء
+      statusBarColor: Colors.black,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.black,
+      systemNavigationBarIconBrightness: Brightness.light,
     ));
   }
 
@@ -81,17 +83,10 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
-    // إذا استيقظ التطبيق وعاد للواجهة (من المينيمايز أو القفل)
     if (state == AppLifecycleState.resumed) {
-      // التأكيد على ثبات ألوان الأشرطة السوداء عند العودة للتطبيق
       _applyStableSystemUI();
-
       if (_webViewController != null) {
-        debugPrint('📱 [Otime Wakeup] تم رصد عودة التطبيق للواجهة، يتم نغز المزامنة فوراً...');
-        
         _webViewController!.evaluateJavascript(source: '''
-          console.log('🔄 [Native Bridge] نغزة ذكية من فلاتر لإفراغ طابور العمليات فوراً');
           if (typeof syncGuestInteractionsWithFirebase === 'function') {
             syncGuestInteractionsWithFirebase();
           }
@@ -121,14 +116,12 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
         backgroundColor: const Color(0xFF2c2c2c),
         body: Stack(
           children: [
-            // إرجاع الـ SafeArea لضمان ثبات الأبعاد وحل مشاكل اليوتيوب والتدقير تماماً
             SafeArea(
               child: InAppWebView(
                 initialUrlRequest: URLRequest(url: WebUri('https://tpm-offers.blogspot.com/')),
                 initialSettings: _settings,
                 onWebViewCreated: (controller) {
                   _webViewController = controller;
-                  
                   _webViewController!.addJavaScriptHandler(
                     handlerName: 'NativeShareChannel',
                     callback: (args) {
@@ -146,11 +139,9 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                 },
                 shouldOverrideUrlLoading: (controller, navigationAction) async {
                   final url = navigationAction.request.url?.toString() ?? '';
-
                   if (url.startsWith('whatsapp:') || url.startsWith('tel:') || url.startsWith('intent://')) {
                     try {
                       await Future.delayed(const Duration(milliseconds: 300));
-
                       String finalUrl = url.startsWith('intent://') 
                           ? url.replaceFirst('intent://', 'https://').split('#Intent')[0]
                           : url;
@@ -163,9 +154,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                   return NavigationActionPolicy.ALLOW;
                 },
                 onLoadStop: (controller, url) async {
-                  // حقن كود الـ CSS والـ JS المحمّي ضد التكرار لمنع الـ Flicker والبطء
                   await controller.evaluateJavascript(source: '''
-                    // 1. منع تكرار حقن الـ CSS (حقن لمرة واحدة بالـ ID)
                     if (!document.getElementById('otime-custom-styles')) {
                       var style = document.createElement('style');
                       style.id = 'otime-custom-styles';
@@ -173,22 +162,20 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                         ::-webkit-scrollbar { display: none !important; }
                         .header-widget, .footer-widget { display: none !important; }
                         body, html { background-color: #2c2c2c !important; }
+                        iframe { pointer-events: auto !important; }
                       `;
                       document.head.appendChild(style);
                     }
 
-                    // حماية الدالة المساعدة من التكرار
                     if (typeof window.getLink !== 'function') {
                       window.getLink = function(element) {
                         var parentCard = element.closest('.article-card');
                         var dataUrl = parentCard ? parentCard.getAttribute('data-post-url') : null;
                         if (dataUrl) return dataUrl;
-
                         if (parentCard && parentCard.classList.contains('no-image')) {
                           var textLink = parentCard.querySelector('h2 a, h3 a, a[href*=".html"]');
                           if (textLink) return textLink.href;
                         }
-
                         var modal = document.getElementById('articleModal');
                         if (modal && modal.style.display !== 'none') {
                           var modalLink = modal.getAttribute('data-current-url') || 
@@ -199,7 +186,6 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                       };
                     }
 
-                    // 2. منع تكرار مستمعي النقرات (استخدام الـ window flag كـ قفل أمان)
                     if (!window.otimeShareListenerAdded) {
                       window.otimeShareListenerAdded = true;
                       document.addEventListener('click', function(e) {
