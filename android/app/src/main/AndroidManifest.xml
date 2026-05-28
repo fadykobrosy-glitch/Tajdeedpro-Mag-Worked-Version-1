@@ -28,7 +28,7 @@
     </queries>
     
     <application
-        android:label="Tajdeed Pro Mag"
+        android:label="OTime Syria"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
