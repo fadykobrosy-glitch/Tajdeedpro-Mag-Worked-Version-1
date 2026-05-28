@@ -6,11 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
 void main() {
-  runApp(const TajdeedProMagApp());
+  runApp(const OtimeSyriaApp());
 }
 
-class TajdeedProMagApp extends StatelessWidget {
-  const TajdeedProMagApp({super.key});
+class OtimeSyriaApp extends StatelessWidget {
+  const OtimeSyriaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +262,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
           },
         ),
       )
-      ..loadRequest(Uri.parse('https://tajdeedpro.blogspot.com/'));
+      ..loadRequest(Uri.parse('https://tpm-offers.blogspot.com/'));
   }
 
   Future<void> _refreshWebView() async {
