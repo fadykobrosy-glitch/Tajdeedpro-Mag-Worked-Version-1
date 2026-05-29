@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -34,6 +35,7 @@ class _WebViewScreenState extends State<WebViewScreen>
     with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   
   InAppWebViewController? _webViewController;
+  PullToRefreshController? _pullToRefreshController; // تمت إضافة متحكم السحب للتحديث
   bool _isLoading = true;
   double _loadingProgress = 0.0;
 
@@ -63,6 +65,21 @@ class _WebViewScreenState extends State<WebViewScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _applyStableSystemUI();
+
+    // إعداد ميزة السحب للأسفل للتحديث
+    _pullToRefreshController = PullToRefreshController(
+      settings: PullToRefreshSettings(
+        color: const Color(0xFFfb6d0e),
+      ),
+      onRefresh: () async {
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          _webViewController?.reload();
+        } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+          _webViewController?.loadUrl(
+              urlRequest: URLRequest(url: await _webViewController?.getUrl()));
+        }
+      },
+    );
   }
 
   void _applyStableSystemUI() {
@@ -117,6 +134,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                 child: InAppWebView(
                   initialUrlRequest: URLRequest(url: WebUri('https://tpm-offers.blogspot.com/')),
                   initialSettings: _settings,
+                  pullToRefreshController: _pullToRefreshController, // ربط المتحكم هنا
                   onWebViewCreated: (controller) {
                     _webViewController = controller;
                     _webViewController!.addJavaScriptHandler(
@@ -129,6 +147,9 @@ class _WebViewScreenState extends State<WebViewScreen>
                     );
                   },
                   onProgressChanged: (controller, progress) {
+                    if (progress == 100) {
+                      _pullToRefreshController?.endRefreshing(); // إيقاف أنيميشن التحديث عند انتهاء التحميل
+                    }
                     setState(() {
                       _loadingProgress = progress / 100;
                       _isLoading = progress < 100;
@@ -136,21 +157,33 @@ class _WebViewScreenState extends State<WebViewScreen>
                   },
                   shouldOverrideUrlLoading: (controller, navigationAction) async {
                     final url = navigationAction.request.url?.toString() ?? '';
-                    if (url.startsWith('whatsapp:') || url.startsWith('tel:') || url.startsWith('intent://')) {
+                    
+                    // منع الصفحات البيضاء وفتح التطبيقات مباشرة
+                    if (url.startsWith('whatsapp:') || 
+                        url.startsWith('tel:') || 
+                        url.startsWith('intent://') || 
+                        url.startsWith('tg://')) {
                       try {
                         await Future.delayed(const Duration(milliseconds: 300));
                         String finalUrl = url.startsWith('intent://') 
                             ? url.replaceFirst('intent://', 'https://').split('#Intent')[0] 
                             : url;
+                        
+                        // محاولة فتح التطبيق
                         await launchUrl(Uri.parse(finalUrl), mode: LaunchMode.externalApplication);
+                        
+                        // إرجاع CANCEL هو ما يمنع الصفحة البيضاء من الظهور
                         return NavigationActionPolicy.CANCEL;
                       } catch (e) {
                         debugPrint('External launch error: $e');
+                        // في حال فشل الفتح، نلغي التحميل أيضاً لمنع الصفحة البيضاء
+                        return NavigationActionPolicy.CANCEL; 
                       }
                     }
                     return NavigationActionPolicy.ALLOW;
                   },
                   onLoadStop: (controller, url) async {
+                    _pullToRefreshController?.endRefreshing();
                     await controller.evaluateJavascript(source: '''
                       (function() {
                         if (!document.getElementById('otime-custom-styles')) {
@@ -194,7 +227,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                         if (!window.otimeShareListenerAdded) {
                           window.otimeShareListenerAdded = true;
                           document.addEventListener('click', function(e) {
-                            var btn = e.target.closest('.footer-btn.share-btn');
+                           var btn = e.target.closest('.footer-btn.share-btn, .share-btn, .share, [aria-label*="share"], a[href*="share"]');
                             if (btn) {
                               e.preventDefault();
                               window.flutter_inappwebview.callHandler('NativeShareChannel', window.getLink(btn));
@@ -207,7 +240,6 @@ class _WebViewScreenState extends State<WebViewScreen>
                 ),
               ),
             ),
-            // التصحيح: تم نقل Positioned للخارج وإضافة IgnorePointer
             Positioned(
               top: 0,
               left: 0,
