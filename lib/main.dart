@@ -30,7 +30,6 @@ class WebViewScreen extends StatefulWidget {
   State<WebViewScreen> createState() => _WebViewScreenState();
 }
 
-// 1 & 3. تم إضافة AutomaticKeepAliveClientMixin و wantKeepAlive للحفاظ على الحالة
 class _WebViewScreenState extends State<WebViewScreen>
     with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   
@@ -39,7 +38,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   double _loadingProgress = 0.0;
 
   @override
-  bool get wantKeepAlive => true; // منع تدمير الـ WebView عند التنقل
+  bool get wantKeepAlive => true;
 
   final InAppWebViewSettings _settings = InAppWebViewSettings(
     javaScriptEnabled: true,
@@ -97,7 +96,7 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // ضروري لـ AutomaticKeepAliveClientMixin
+    super.build(context);
     
     return PopScope(
       canPop: false,
@@ -113,7 +112,6 @@ class _WebViewScreenState extends State<WebViewScreen>
         backgroundColor: const Color(0xFF2c2c2c),
         body: Stack(
           children: [
-            // 2. RepaintBoundary لعزل الرسم ومنع الـ lag
             RepaintBoundary(
               child: SafeArea(
                 child: InAppWebView(
@@ -153,7 +151,6 @@ class _WebViewScreenState extends State<WebViewScreen>
                     return NavigationActionPolicy.ALLOW;
                   },
                   onLoadStop: (controller, url) async {
-                    // 5 & 6. حقن JS والـ IntersectionObserver للتحميل الكسول
                     await controller.evaluateJavascript(source: '''
                       (function() {
                         if (!document.getElementById('otime-custom-styles')) {
@@ -210,19 +207,22 @@ class _WebViewScreenState extends State<WebViewScreen>
                 ),
               ),
             ),
-            // 4. AnimatedOpacity لانتقال سلس لمؤشر التحميل
-            AnimatedOpacity(
-              opacity: _isLoading ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: LinearProgressIndicator(
-                  value: _loadingProgress,
-                  backgroundColor: Colors.transparent,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFfb6d0e)),
-                  minHeight: 3,
+            // التصحيح: تم نقل Positioned للخارج وإضافة IgnorePointer
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                ignoring: !_isLoading,
+                child: AnimatedOpacity(
+                  opacity: _isLoading ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: LinearProgressIndicator(
+                    value: _loadingProgress,
+                    backgroundColor: Colors.transparent,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFfb6d0e)),
+                    minHeight: 3,
+                  ),
                 ),
               ),
             ),
